@@ -1,0 +1,7 @@
+
+{"action": "set", "key": "Siddhu", "value": "1"}
+{"action": "set", "key": "Akhila", "value": "2"}
+{"action": "set", "key": "Bhavana", "value": "3"}
+{"action": "set", "key": "Hema", "value": "4"}
+{"action": "delete", "key": "Hema"}
+{"action": "set", "key": "Lucky", "value": "4"}

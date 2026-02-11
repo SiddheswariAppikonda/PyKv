@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PyKV Dashboard</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+
+<style>
+:root {
+    --primary:#2563EB;
+    --success:#16A34A;
+    --danger:#DC2626;
+    --bg:#F1F5F9;
+    --card:#FFFFFF;
+    --border:#E5E7EB;
+    --text:#0F172A;
+}
+
+* { box-sizing:border-box; }
+
+body {
+    margin:0;
+    padding:24px;
+    font-family:"Inter","Segoe UI",system-ui,sans-serif;
+    background:var(--bg);
+    color:var(--text);
+}
+
+/* HEADER */
+.header {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    background:var(--card);
+    padding:18px 26px;
+    border-radius:18px;
+    box-shadow:0 8px 28px rgba(0,0,0,.08);
+    margin-bottom:28px;
+}
+
+.header-left { font-size:22px; font-weight:800; }
+.header-center { font-size:14px; color:#475569; }
+.header-right { display:flex; align-items:center; gap:12px; }
+
+.badge {
+    padding:6px 14px;
+    border-radius:999px;
+    font-size:13px;
+    font-weight:700;
+}
+.green { background:#DCFCE7; color:#166534; }
+.red { background:#FEE2E2; color:#991B1B; }
+
+.logout {
+    background:var(--danger);
+    color:white;
+    border:none;
+    padding:9px 16px;
+    border-radius:10px;
+    font-weight:700;
+    cursor:pointer;
+}
+
+/* LAYOUT */
+.main {
+    display:grid;
+    grid-template-columns:2.2fr 1fr;
+    gap:26px;
+}
+
+.card {
+    background:var(--card);
+    border-radius:20px;
+    padding:28px;
+    box-shadow:0 10px 30px rgba(0,0,0,.08);
+}
+
+h2 {
+    margin:0 0 22px;
+    text-align:center;
+    color:#1E3A8A;
+}
+
+/* INPUTS */
+input {
+    width:100%;
+    padding:15px;
+    font-size:16px;
+    border-radius:14px;
+    border:1px solid var(--border);
+    margin-bottom:14px;
+}
+
+/* BUTTONS */
+.btn-group {
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:14px;
+}
+
+button {
+    padding:15px;
+    font-size:16px;
+    font-weight:800;
+    border-radius:14px;
+    border:none;
+    color:white;
+    cursor:pointer;
+}
+
+.set { background:#2563EB; }
+.get { background:#16A34A; }
+.delete { background:#DC2626; }
+.list { background:#6366F1; }
+
+/* RESPONSE */
+.response {
+    margin-top:20px;
+    padding:22px;
+    font-size:16px;
+    font-weight:600;
+    border-radius:16px;
+    white-space:pre-wrap;
+}
+.success { background:#ECFDF5; color:#065F46; border:2px solid #86EFAC; }
+.error { background:#FEF2F2; color:#991B1B; border:2px solid #FCA5A5; }
+.info { background:#EFF6FF; color:#1E40AF; border:2px solid #BFDBFE; }
+
+/* CACHE */
+.cache-grid {
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:16px;
+}
+.metric {
+    background:#F8FAFC;
+    padding:20px;
+    border-radius:16px;
+    text-align:center;
+    border:1px solid var(--border);
+}
+.metric-title { font-size:13px; color:#64748B; }
+.metric-value { font-size:26px; font-weight:900; }
+</style>
+</head>
+
+<body>
+
+<script>
+if (!localStorage.getItem("pykv_auth")) {
+    window.location.href = "login.html";
+}
+</script>
+
+<div class="header">
+    <div class="header-left">🛢️ PYKV STORE</div>
+
+    <div class="header-center">
+        👤 <b id="userName"></b> | 🕒 <span id="loginTime"></span>
+    </div>
+
+    <div class="header-right">
+        <span class="badge" id="primaryBadge">Primary</span>
+        <span class="badge" id="replicaBadge">Replica</span>
+
+        <!-- ✅ BENCHMARK LINK -->
+        <a href="benchmark.html" style="
+            text-decoration:none;
+            font-weight:700;
+            color:#2563EB;
+            padding:8px 14px;
+            border-radius:10px;
+            background:#EFF6FF;
+        ">
+        📊 Benchmark
+        </a>
+
+        <button class="logout" onclick="logout()">Logout</button>
+    </div>
+</div>
+
+<div class="main">
+
+<div class="card">
+<h2>Key Operations</h2>
+
+<input id="key" placeholder="Enter key">
+<input id="value" placeholder="Enter value">
+
+<div class="btn-group">
+    <button class="set" onclick="setValue()">SET</button>
+    <button class="get" onclick="getValue()">GET</button>
+    <button class="delete" onclick="deleteValue()">DELETE</button>
+    <button class="list" onclick="getAll()">LIST</button>
+</div>
+
+<div id="output" class="response info">Waiting for action…</div>
+</div>
+
+<div class="card">
+<h2>Cache Performance</h2>
+
+<div class="cache-grid">
+    <div class="metric">
+        <div class="metric-title">Total Keys</div>
+        <div class="metric-value" id="totalKeys">-</div>
+    </div>
+    <div class="metric">
+        <div class="metric-title">Cache Hits</div>
+        <div class="metric-value" id="cacheHits">-</div>
+    </div>
+    <div class="metric">
+        <div class="metric-title">Cache Misses</div>
+        <div class="metric-value" id="cacheMisses">-</div>
+    </div>
+    <div class="metric">
+        <div class="metric-title">Hit Rate</div>
+        <div class="metric-value" id="cacheRate">-</div>
+    </div>
+</div>
+
+<p style="text-align:right;font-size:13px;color:#64748B;margin-top:14px;">
+Last Updated: <span id="lastUpdated">-</span>
+</p>
+</div>
+
+</div>
+
+<script>
+const PRIMARY_API = "http://127.0.0.1:8000";
+const REPLICA_API = "http://127.0.0.1:8001";
+const MAX_KEYS_TO_SHOW = 10;
+
+userName.textContent = localStorage.getItem("pykv_user") || "Unknown";
+loginTime.textContent = localStorage.getItem("pykv_login_time") || "-";
+
+function logout(){
+    localStorage.clear();
+    window.location.href="login.html";
+}
+
+function show(msg,type="info"){
+    output.className="response "+type;
+    output.textContent=msg;
+}
+
+/* HEALTH */
+function checkPrimary(){
+    fetch(PRIMARY_API+"/health")
+        .then(()=>primaryBadge.className="badge green")
+        .catch(()=>primaryBadge.className="badge red");
+}
+function checkReplica(){
+    fetch(REPLICA_API+"/health")
+        .then(()=>replicaBadge.className="badge green")
+        .catch(()=>replicaBadge.className="badge red");
+}
+
+/* CRUD */
+async function setValue(){
+    const r = await fetch(PRIMARY_API+"/set",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({key:key.value,value:value.value})
+    });
+    r.ok
+      ? show(`✅ Stored Successfully\n\nKey: ${key.value}\nValue: ${value.value}`,"success")
+      : show("❌ Store failed","error");
+}
+
+async function getValue(){
+    try{
+        const r = await fetch(PRIMARY_API+"/get/"+key.value);
+        if(r.ok){
+            const d = await r.json();
+            show(`🟢 Primary Response\n\n${key.value} → ${d.value}`,"success");
+            return;
+        }
+        throw 0;
+    }catch{
+        try{
+            const r2 = await fetch(REPLICA_API+"/get/"+key.value);
+            if(r2.ok){
+                const d2 = await r2.json();
+                show(`🟡 Replica Response\n\n${key.value} → ${d2.value}`,"success");
+            } else {
+                show("❌ Key not found","error");
+            }
+        }catch{
+            show("❌ Primary & Replica unavailable","error");
+        }
+    }
+}
+
+async function deleteValue(){
+    const r = await fetch(PRIMARY_API+"/delete/"+key.value,{method:"DELETE"});
+    r.ok
+      ? show(`🗑️ Deleted\n\n${key.value}`,"success")
+      : show("❌ Delete failed","error");
+}
+
+/* LIST */
+async function getAll(){
+    try{
+        const r = await fetch(PRIMARY_API+"/all");
+        const data = await r.json();
+
+        let text = "📦 Stored Key-Value Pairs\n\n";
+
+        if (data.full_store && Object.keys(data.full_store).length > 0) {
+            const keys = Object.keys(data.full_store);
+            const total = keys.length;
+
+            text += `🗄️ FULL STORE (showing ${Math.min(MAX_KEYS_TO_SHOW,total)} of ${total})\n\n`;
+
+            for (let i=0;i<Math.min(MAX_KEYS_TO_SHOW,total);i++){
+                const k = keys[i];
+                text += `🔑 ${k} → ${data.full_store[k]}\n`;
+            }
+
+            if (total > MAX_KEYS_TO_SHOW) {
+                text += `\n… and ${total - MAX_KEYS_TO_SHOW} more keys`;
+            }
+        } else {
+            text += "🗄️ FULL STORE\n⚠️ Empty\n";
+        }
+
+        text += "\n\n";
+
+        if (Array.isArray(data.current_cache) && data.current_cache.length > 0) {
+            text += "⚡ CURRENT CACHE KEYS\n";
+            data.current_cache.forEach(k => text += `• ${k}\n`);
+        } else {
+            text += "⚡ CURRENT CACHE KEYS\n⚠️ Cache Empty\n";
+        }
+
+        show(text,"info");
+    }catch{
+        show("❌ Primary down — LIST unavailable","error");
+    }
+}
+
+/* CACHE STATS */
+async function updateCacheStats(){
+    try{
+        const r = await fetch(PRIMARY_API+"/cache-stats");
+        const d = await r.json();
+        totalKeys.textContent = d.totalKeys;
+        cacheHits.textContent = d.hits;
+        cacheMisses.textContent = d.misses;
+        cacheRate.textContent = d.performanceRate;
+        lastUpdated.textContent = new Date().toLocaleTimeString();
+    }catch{
+        totalKeys.textContent="-";
+        cacheHits.textContent="-";
+        cacheMisses.textContent="-";
+        cacheRate.textContent="-";
+        lastUpdated.textContent="Primary unavailable";
+    }
+}
+
+checkPrimary();
+checkReplica();
+updateCacheStats();
+
+setInterval(checkPrimary,3000);
+setInterval(checkReplica,3000);
+setInterval(updateCacheStats,5000);
+</script>
+
+</body>
+</html>

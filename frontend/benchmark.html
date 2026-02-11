@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PyKV Benchmark</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+:root {
+    --bg: #F1F5F9;
+    --card: #FFFFFF;
+    --border: #E5E7EB;
+    --text: #0F172A;
+    --muted: #64748B;
+    --primary: #2563EB;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    padding: 24px;
+    background: var(--bg);
+    font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+    color: var(--text);
+}
+
+/* HEADER */
+.header {
+    background: var(--card);
+    padding: 16px 24px;
+    border-radius: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 10px 28px rgba(0,0,0,0.08);
+    margin-bottom: 28px;
+}
+
+.header strong {
+    font-size: 18px;
+    font-weight: 800;
+}
+
+.header a {
+    text-decoration: none;
+    font-weight: 600;
+    color: var(--primary);
+}
+
+/* MAIN CARD */
+.card {
+    background: var(--card);
+    border-radius: 20px;
+    padding: 28px;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.08);
+}
+
+/* ACTIONS */
+.btn-group {
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+    margin-bottom: 28px;
+}
+
+button {
+    padding: 12px 22px;
+    border-radius: 12px;
+    border: none;
+    background: var(--primary);
+    color: white;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform .15s ease, box-shadow .15s ease;
+}
+
+button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 14px rgba(37,99,235,.35);
+}
+
+/* CHARTS */
+.chart-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 22px;
+}
+
+.chart-card {
+    background: #F8FAFC;
+    border-radius: 16px;
+    padding: 18px;
+    border: 1px solid var(--border);
+}
+
+/* LOG OUTPUT */
+.response {
+    margin-top: 26px;
+    background: #020617;
+    color: #E5E7EB;
+    border-radius: 14px;
+    padding: 16px;
+    font-family: monospace;
+    font-size: 13px;
+    max-height: 220px;
+    overflow: auto;
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+    <strong>📊 PyKV Benchmark · SET Performance</strong>
+    <a href="index.html">← Dashboard</a>
+</div>
+
+<div class="card">
+
+    <div class="btn-group">
+        <button onclick="runBenchmark(100)">100 Ops</button>
+        <button onclick="runBenchmark(1000)">1000 Ops</button>
+        <button onclick="runBenchmark(5000)">5000 Ops</button>
+    </div>
+
+    <div class="chart-grid">
+        <div class="chart-card">
+            <canvas id="opsChart"></canvas>
+        </div>
+        <div class="chart-card">
+            <canvas id="latencyChart"></canvas>
+        </div>
+    </div>
+
+    <div class="response" id="output">// benchmark logs</div>
+</div>
+
+<script>
+const API = "http://127.0.0.1:8000";
+
+let labels = [];
+let opsData = [];
+let latencyData = [];
+const barColors = [];
+const pointColors = [];
+
+/* OPS / SEC */
+const opsChart = new Chart(document.getElementById("opsChart"), {
+    type: "bar",
+    data: {
+        labels,
+        datasets: [{
+            data: opsData,
+            backgroundColor: barColors,
+            borderRadius: 10
+        }]
+    },
+    options: {
+        plugins: {
+            title: {
+                display: true,
+                text: "Throughput (Operations / Second)",
+                font: { size: 14, weight: "bold" }
+            },
+            legend: { display: false }
+        },
+        scales: {
+            y: { beginAtZero: true }
+        }
+    }
+});
+
+/* LATENCY */
+const latencyChart = new Chart(document.getElementById("latencyChart"), {
+    type: "line",
+    data: {
+        labels,
+        datasets: [{
+            data: latencyData,
+            borderColor: "#DC2626",
+            backgroundColor: "rgba(220,38,38,.15)",
+            pointBackgroundColor: pointColors,
+            pointRadius: 5,
+            fill: true,
+            tension: 0.35
+        }]
+    },
+    options: {
+        plugins: {
+            title: {
+                display: true,
+                text: "Average SET Latency (ms)",
+                font: { size: 14, weight: "bold" }
+            },
+            legend: { display: false }
+        },
+        scales: {
+            y: { beginAtZero: true }
+        }
+    }
+});
+
+async function runBenchmark(ops) {
+    output.textContent = "Running benchmark...\n";
+
+    const res = await fetch(`${API}/benchmark/run?ops=${ops}`, { method: "POST" });
+    const data = await res.json();
+
+    labels.push(`${ops} ops`);
+    opsData.push(data.ops_per_second);
+    latencyData.push(data.latency_ms_per_op);
+
+    if (ops === 100) {
+        barColors.push("#22C55E");
+        pointColors.push("#22C55E");
+    } else if (ops === 1000) {
+        barColors.push("#2563EB");
+        pointColors.push("#2563EB");
+    } else {
+        barColors.push("#F97316");
+        pointColors.push("#F97316");
+    }
+
+    opsChart.update();
+    latencyChart.update();
+
+    output.textContent += JSON.stringify(data, null, 2) + "\n\n";
+}
+</script>
+
+</body>
+</html>
