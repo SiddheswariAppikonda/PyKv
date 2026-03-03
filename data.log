@@ -5,3 +5,11 @@
 {"action": "set", "key": "Hema", "value": "4"}
 {"action": "delete", "key": "Hema"}
 {"action": "set", "key": "Lucky", "value": "4"}
+{"action": "set", "key": "bts", "value": "alekhya"}
+{"action": "set", "key": "bts", "value": "alekhya"}
+{"action": "set", "key": "Siddhu", "value": "Siva"}
+{"action": "set", "key": "Siddhu", "value": "MukkuSiva"}
+{"action": "set", "key": "BuddaPedhalaSiddhu", "value": "MukkuSiva"}
+{"action": "delete", "key": "Siddhu"}
+{"action": "set", "key": "Charan", "value": "88"}
+{"action": "set", "key": "jai", "value": "33"}
