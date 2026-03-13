@@ -13,3 +13,4 @@
 {"action": "delete", "key": "Siddhu"}
 {"action": "set", "key": "Charan", "value": "88"}
 {"action": "set", "key": "jai", "value": "33"}
+{"action": "set", "key": "6", "value": "mukku"}
