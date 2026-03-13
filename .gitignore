@@ -2,5 +2,16 @@
 __pycache__/
 *.pyc
 
-# VS Code settings
+# Log files
+*.log
+
+# Virtual environments
+venv/
+env/
+
+# IDE settings
 .vscode/
+.idea/
+
+# OS files
+.DS_Store
